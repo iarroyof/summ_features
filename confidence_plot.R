@@ -36,9 +36,6 @@ get_conf_graph <- function(data, Name, syss) {
          main = paste("Statistics for feature [", Name, "] in Baseline and SOA sumarizers"), 
          ylab = "Feature frequency", xlab = "", xaxt = 'n')
   axis(1, at=1:length(syss), labels=syss, las=2)
-  #text(cex=1, x=.25, y=-1.25, syss, srt=45, pos=2)
-
-  print(ers)
   
 }
 
