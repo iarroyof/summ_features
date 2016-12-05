@@ -40,22 +40,30 @@ get_conf_graph <- function(data, Name, syss) {
 }
 
 plot_feature <- function(file, feat){
+  #grepy0 <- "d30002t."
+  #grepy1 <- "*d30002t."
+  grepy0 <- "*T.[:upper:]"
+  
   data <- read.csv(file)
-  names <- subset(data, grepl("d30002t.", data[,1]) )[,1]
-  #feats <- read.csv(file, header = T)[1,]
-  feat <- colnames( data )[feat]
-  nDocs <- 50 #length(subset(data, grepl(".DPP", data[,1]) )[,1])
-  systems <- 0
-  
-  
+  names <- subset(data, grepl(grepy0, data[,1]) )[,1]
+  feat <- colnames(data)[feat]
+  nDocs <- 25 #length(subset(data, grepl(".DPP", data[,1]) )[,1])
+  #systems <- 0
+  systems <- list()
+  #print(names)
+
   i <- 1
   for (nam in names){
-    systems[i] <- sub("*d30002t.", "", nam)
+    #systems[i] <- sub(grepy1, "", nam)
+    print(i)
+    systems[i] <- substr(nam, 15, 16)
+    print(systems[i])
     i <- i + 1
   }
-
   nSystems <- i - 1
 
+  print(systems)
+  
   sys_table <- list()
   i <- 1
   for(sys in systems){
@@ -71,13 +79,15 @@ plot_feature <- function(file, feat){
   }
   
   get_conf_graph(syss_feature, feat, systems)
-
+  #return(feats)
 }
 
-#plot_feature("R/DUC04_stat_results_non_human.csv",5)
-for (p in 2:101){
-  
-  png(paste0(filename="non_human_mnmd_byFeature_", p,".png"))
-  plot_feature("R/DUC04_stat_results_non_human.csv", p)
-  dev.off()
-}
+dir="/home/lia/iarroyof/R/plots_jir/non_human/"
+# plot_feature("DUC04_stat_results_non_human.csv",5)
+plot_feature("DUC04_stat_results_human.csv",5)
+#for (p in 2:101){
+#  png(filename=paste0(dir,"non_human_25docs_byFeature_", p,".png"))
+#  plot_feature("DUC04_stat_results_non_human.csv", p)
+#  dev.off()
+#}
+
