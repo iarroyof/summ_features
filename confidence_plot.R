@@ -27,39 +27,45 @@ get_conf_graph <- function(data, Name, syss) {
   
   require(plotrix)
   Summarizer <- 1:c
+  labx = ""
+  #labx = "Annotator / summarizer"
   
   par(mfrow=c(1,1)) # 
   plotCI(Summarizer, Medians, ui = upsMn, li = dwsMn, ylab = "", xlab = "", axes = F, scol = "blue", 
          slty = "dotted", pt.bg = par("bg"), pch = 19)
   par(mfrow=c(1,1), new=T)
   plotCI(Summarizer, Means, ui = upsMn, li = dwsMn, 
-         main = paste("Statistics for feature [", Name, "] in Baseline and SOA sumarizers"), 
-         ylab = "Feature frequency", xlab = "", xaxt = 'n')
+         #main = paste("Statistics for feature [", Name, "] in Baseline and SOA sumarizers"),
+         #main = paste("Statistics for feature [", Name, "] in human sumaries"),
+         main = paste("Statistics for feature [", Name, "] in human and machine sumaries"),
+         ylab = "Feature frequency", xlab = labx, xaxt = 'n')
   axis(1, at=1:length(syss), labels=syss, las=2)
   
 }
 
 plot_feature <- function(file, feat){
-  #grepy0 <- "d30002t."
-  #grepy1 <- "*d30002t."
+  grepy0 <- "d30002t."
+  grepy1 <- "*d30002t."
   
   data <- read.csv(file)
   names <- data[, 1]
   #names <- subset(data, grepl(grepy0, data[,1]) )[,1]
   feat <- colnames(data)[feat]
   nDocs <- 25 #length(subset(data, grepl(".DPP", data[,1]) )[,1])
-  systems <- list()
+  #systems <- list()
+  print(paste("Feature name: ", feat))
   
   i <- 1
   syss <- 0
   for (name in names){
-    #systems[i] <- sub(grepy1, "", nam)
-    syss[i] <- substr(name, 15, 16)
-    i <- i + 1
+    #systems[i] <- sub(grepy1, "", name)
+    if (name != ""){
+      syss[i] <- substr(name, 8, nchar(name))
+      i <- i + 1
+    }
   }
   
   systems <- unique(syss)
-  nSystems <- length(systems)
   
   sys_table <- list()
   i <- 1
@@ -68,7 +74,7 @@ plot_feature <- function(file, feat){
     i <- i + 1
   }
   
-  syss_feature <- matrix( ,nrow = nDocs, ncol = nSystems)
+  syss_feature <- matrix( ,nrow = nDocs, ncol = length(systems))
   i <- 1
   for (sys in sys_table){
     syss_feature[,i] <- sys[,feat][1:nDocs]
@@ -76,15 +82,15 @@ plot_feature <- function(file, feat){
   }
   
   get_conf_graph(syss_feature, feat, systems)
-  #return(feats)
+
 }
 
-dir="/home/iarroyof/R/plots_jir/human/"
-filin="DUC04_stat_results_human.csv"
-# plot_feature("DUC04_stat_results_non_human.csv",5)
-#plot_feature("DUC04_stat_results_human.csv",15)
+dir = "/home/iarroyof/R/plots_jir/both_h_nh/"
+filin = "DUC04_stat_all_results.csv"
+# plot_feature(filin,5)
+#plot_feature(filin, 14)
 for (p in 2:101){
-  png(filename=paste0(dir, "human_25docs_byFeature_", p, ".png"))
+  png(filename=paste0(dir, "human-nonHuman_25docs_byFeature_", p, ".png"))
   plot_feature(filin, p)
   dev.off()
 }
