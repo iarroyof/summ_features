@@ -53,7 +53,7 @@ plot_feature <- function(file, feat){
   feat <- colnames(data)[feat]
   nDocs <- 25 #length(subset(data, grepl(".DPP", data[,1]) )[,1])
   #systems <- list()
-  print(paste("Feature name: ", feat))
+  print(paste("Feature name:", feat))
   
   i <- 1
   syss <- 0
@@ -87,7 +87,7 @@ plot_feature <- function(file, feat){
 
 dir = "/home/iarroyof/R/plots_jir/both_h_nh/"
 filin = "DUC04_stat_all_results.csv"
-# plot_feature(filin,5)
+
 #plot_feature(filin, 14)
 for (p in 2:101){
   png(filename=paste0(dir, "human-nonHuman_25docs_byFeature_", p, ".png"))
