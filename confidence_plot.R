@@ -30,22 +30,22 @@ get_conf_graph <- function(data, Name, syss) {
   labx = ""
   #labx = "Annotator / summarizer"
   
-  par(mfrow=c(1,1)) # 
+  par(mfrow = c(1, 1)) # 
   plotCI(Summarizer, Medians, ui = upsMn, li = dwsMn, ylab = "", xlab = "", axes = F, scol = "blue", 
          slty = "dotted", pt.bg = par("bg"), pch = 19)
-  par(mfrow=c(1,1), new=T)
+  par(mfrow = c(1, 1), new = T)
   plotCI(Summarizer, Means, ui = upsMn, li = dwsMn, 
          #main = paste("Statistics for feature [", Name, "] in Baseline and SOA sumarizers"),
          #main = paste("Statistics for feature [", Name, "] in human sumaries"),
          main = paste("Statistics for feature [", Name, "] in human and machine sumaries"),
          ylab = "Feature frequency", xlab = labx, xaxt = 'n')
-  axis(1, at=1:length(syss), labels=syss, las=2)
+  axis(1, at=1:length(syss), labels = syss, las = 2)
   
 }
 
 plot_feature <- function(file, feat){
-  grepy0 <- "d30002t."
-  grepy1 <- "*d30002t."
+  #grepy0 <- "d30002t."
+  #grepy1 <- "*d30002t."
   
   data <- read.csv(file)
   names <- data[, 1]
@@ -60,7 +60,8 @@ plot_feature <- function(file, feat){
   for (name in names){
     #systems[i] <- sub(grepy1, "", name)
     if (name != ""){
-      syss[i] <- substr(name, 8, nchar(name))
+      #syss[i] <- substr(name, 8, nchar(name))
+      syss[i] <- sub(".\\w*", "", name)
       i <- i + 1
     }
   }
@@ -85,12 +86,13 @@ plot_feature <- function(file, feat){
 
 }
 
-dir = "/home/iarroyof/R/plots_jir/both_h_nh/"
+dir = "/home/iarroyof/R/plots_jir/wordLimitMovies/"
 filin = "DUC04_stat_all_results.csv"
-
+#filin = "MoviesUVWXYZ_stat_results_human.csv"
+nFeatures = 96
 #plot_feature(filin, 14)
-for (p in 2:101){
-  png(filename=paste0(dir, "human-nonHuman_25docs_byFeature_", p, ".png"))
+for (p in 2:nFeatures){
+  png(filename=paste0(dir, "human-nonHuman-movies_25docs_byFeature_", p, ".png"))
   plot_feature(filin, p)
   dev.off()
 }
