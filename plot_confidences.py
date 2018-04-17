@@ -5,9 +5,17 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import argparse
 import logging
+import itertools
+import operator
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s',
                     level=logging.INFO)
+
+
+def feature_spectrum(human_ref, machines):
+    return {f: 20.0 * np.log10((1 + machines[f]) / (1 + human_ref[f]))
+                                                         for f in machines}
+
 
 # __main__()
 parser = argparse.ArgumentParser()
@@ -26,20 +34,21 @@ linewidth=2
 aspect=args.aspect
 docs_per_annotator=args.ndocs
 vertical=True
-in_file="all_summ_tables_samp_%d.csv" % docs_per_annotator
+in_file="all_summ_tables_samp_%d_.csv" % docs_per_annotator
 directory="/home/iarroyof/Documentos/summ_feats/RESULTS/"
 
 non_feats=['Unnamed: 0', 'index', 'system', 'system.1']
+
 if args.feat.startswith("inf"):
     may_feats=['IN_AVG', 'IN_MED','IN_MIN','IN_NNP','JJ_AVG',
             'named_entities','NNP','NNP_AVG','NNP_IN','NNP_MAX',
             'NNP_MED','NNP_MIN','NNP_NN','NNP_NNP','NNP_POS',
             'NNPS','NNPS_AVG','NNP_VBZ','NNS_MED','NNS_PERIOD',
-            'no_corefs','no_tokens','sent_sentiment_3','tok_sentim_2',
+            'no_corefs','no_tokens','sent_sentim_3','tok_sentim_2',
             'TotalRST','VBD','VBD_AVG','VBD_MAX','VBD_MED',
             'VBD_NNP','CC','CD_MAX','CD_MED']
-    only_feat=['DATE', 'IN', 'NNP_NNP', 'tok_sentim_2'] + may_feats
-if not args.feat.startswith("all") and args.feat:
+    only_feat=['DATE', 'IN', 'NNP_NNP', 'tok_sentim_2', 'no_openie'] + may_feats
+elif not args.feat == "all":
     only_feat=[args.feat]
 
 sys_tag="system"
@@ -59,27 +68,80 @@ final_src={sources[0]: "Humans_movi_",
            sources[4]: "Humans_duc_"
                }
 
-table_all=pd.read_csv(directory + in_file, sep=',')
+table_all = pd.read_csv(directory + in_file, sep=',')
 
-if args.feat.startswith("all"):
-    means={feat:table_all[feat].mean() for feat in table_all if feat not in non_feats}
-    medians={feat:table_all[feat].median() for feat in table_all if feat not in non_feats}
-    sds={feat:table_all[feat].std() for feat in table_all if feat not in non_feats}
-else:
-    means={feat:table_all[feat].mean() for feat in table_all \
-                if feat not in non_feats and feat in only_feat}
-    medians={feat:table_all[feat].median() for feat in table_all \
-                if feat not in non_feats and feat in only_feat}
-    sds={feat:table_all[feat].std() for feat in table_all \
-                if feat not in non_feats and feat in only_feat}
-
-src_feat={}
+src_feat = {}
 for s_ in regexs:
-    annotators=[s for s in table_all[sys_tag].str.extract(regexs[s_]).unique() if not pd.isnull(s)]
+    annotators = [s for s in table_all[sys_tag].str.extract(regexs[s_]).unique()
+                                                            if not pd.isnull(s)]
     for a in annotators:
-        src_feat[final_src[s_]+a]=table_all[table_all[sys_tag].str.contains(s_+".*"+a+"(.txt|$)")]
+        src_feat[final_src[s_] + a] = table_all[table_all[sys_tag].str.contains(
+                                                s_ + ".*" + a + "(.txt|$)")]
 
-annotators=src_feat.keys()
+#for feat in medians:
+from pdb import set_trace as st
+annotators = src_feat.keys()
+
+median_phis_h = {}
+median_phis_m_soa = {}
+median_phis_m_base = {}
+
+for feature in only_feat:
+    phi_h = [list(src_feat[a][feature]) for a in annotators
+                                                if a.startswith('Humans')]
+    median_phis_h[feature] = np.median(
+                            list(itertools.chain.from_iterable(phi_h))
+                            )  # General human reference
+    phi_m_soa = [list(src_feat[a][feature]) for a in annotators
+                                                if a.startswith('Machines_soa_')]
+    median_phis_m_soa[feature] = np.median(
+                            list(itertools.chain.from_iterable(phi_m_soa))
+                            )  # General human reference
+
+    phi_m_base = [list(src_feat[a][feature]) for a in annotators
+                                                if a.startswith('Machines_base_')]
+    median_phis_m_base[feature] = np.median(
+                            list(itertools.chain.from_iterable(phi_m_base))
+                            )  # General human reference
+
+spectrum_base = feature_spectrum(median_phis_h, median_phis_m_base)
+spectrum_soa = feature_spectrum(median_phis_h, median_phis_m_soa)
+
+spectra_base = sorted(spectrum_base.items(), key=operator.itemgetter(1))
+spectra_soa = [(f, spectrum_soa[f]) for f, _ in spectra_base]
+
+x, y_base = zip(*spectra_base)
+_, y_soa = zip(*spectra_soa)
+
+#fig, ax = plt.subplots()
+
+plt.xlabel('Compared features', fontsize=14)#, color='blue')
+plt.ylabel('Spectrum magnitude', fontsize=14)
+plt.title("Feature spectrum for State-of-the-Art"
+            " and Baseline machine-made summaries", fontsize=11)
+plt.grid(True)
+plt.annotate('State-of-the-Art summaries', xy=(18, 2), xytext=(20, -4.8),
+            arrowprops=dict(facecolor='black', shrink=0.05),
+            )
+
+plt.annotate('Baseline summaries', xy=(20, 6), xytext=(15, 9),
+            arrowprops=dict(facecolor='black', shrink=0.05),
+            )
+
+plt.text(23, -1.0, "Human summaries")
+
+plt.margins(0.08)
+plt.xticks(range(len(x)), x, rotation='vertical', fontsize=10)
+#fig = plt.figure(figsize=(18, 18))
+#plt.figure(tight_layout=True);
+plt.tight_layout()
+plt.locator_params(axis='y', nbins=20, tight=True)
+plt.plot(range(len(x)), y_soa, range(len(x)), y_base, range(len(x)), [0.0]*len(x), 
+                                            'r--', linewidth=2.0)
+#ax.errorbar(range(len(x)), y, xerr=0.2, yerr=0.4)
+plt.show()
+
+exit()
 
 for feat in table_all:
     annotators_feat={}
