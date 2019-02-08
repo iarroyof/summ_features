@@ -7,7 +7,6 @@ import argparse
 import logging
 import itertools
 import operator
-from decimal import Decimal
 from pdb import set_trace as st
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s',
@@ -18,22 +17,6 @@ def feature_spectrum(human_ref, machines):
     return {f: 20.0 * np.log10((1 + machines[f]) / (1 + human_ref[f]))
                                                          for f in machines}
 
-def create_table(pairs, file=None):
-
-    header = sorted(list(set([c for _, c in pairs.keys()])))
-    system = sorted(list(set([c for c, _ in pairs.keys()])))
-
-    table = {"Annotator/summarizer": system}
-    for h in header:
-        col = []
-        for s in system:
-            try:
-                col.append(pairs[(h, s)])
-            except KeyError:
-                continue
-        table[h] = col
-        table[h] = table[h] + ['--'] * (len(system) - len(table[h]))
-    pd.DataFrame(table).to_csv(file, index=False)
 
 # __main__()
 parser = argparse.ArgumentParser()
@@ -47,9 +30,6 @@ parser.add_argument("--feat", help="""If a specific feature is needed to be plot
 parser.add_argument("--sp_bx", help="""If you need feature spectrum pass 'sp', and if
                                     you need boxplots pass 'bx'.""",
                                         default='bx')
-parser.add_argument("--rot", help="""If you need to prepare the csv table for 1-page latex. 
-                                     this rotates the headers and the cells.""",
-                             default=False, action='store_true')
 #parser.add_argument("--outdir", help="Output directory.", default=None)
 args = parser.parse_args()
 
@@ -101,6 +81,8 @@ for s_ in regexs:
     for a in annotators:
         src_feat[final_src[s_] + a] = table_all[table_all[sys_tag].str.contains(
                                                 s_ + ".*" + a + "(.txt|$)")]
+
+#for feat in medians:
 annotators = src_feat.keys()
 
 median_phis_h = {}
@@ -124,6 +106,7 @@ for feature in only_feat:
     median_phis_m_base[feature] = np.median(
                             list(itertools.chain.from_iterable(phi_m_base))
                             )  # General human reference
+
 if args.sp_bx == 'sp':
     spectrum_base = feature_spectrum(median_phis_h, median_phis_m_base)
     spectrum_soa = feature_spectrum(median_phis_h, median_phis_m_soa)
@@ -133,6 +116,8 @@ if args.sp_bx == 'sp':
 
     x, y_base = zip(*spectra_base)
     _, y_soa = zip(*spectra_soa)
+
+    #fig, ax = plt.subplots()
 
     plt.xlabel('Compared features', fontsize=14)#, color='blue')
     plt.ylabel('Spectrum magnitude', fontsize=14)
@@ -151,69 +136,31 @@ if args.sp_bx == 'sp':
 
     plt.margins(0.08)
     plt.xticks(range(len(x)), x, rotation='vertical', fontsize=10)
+#fig = plt.figure(figsize=(18, 18))
+#plt.figure(tight_layout=True);
     plt.tight_layout()
     plt.locator_params(axis='y', nbins=20, tight=True)
     plt.plot(range(len(x)), y_soa, range(len(x)), y_base, range(len(x)),
          [0.0]*len(x), 'r--', linewidth=2.0)
+#ax.errorbar(range(len(x)), y, xerr=0.2, yerr=0.4)
     plt.show()
 
 else:
-    # Include the median of the column when it has less than 'docs_per_annotator'
-    # items. The Mann-Whitneyu test is performed between annotators/summarizers
-    # in order to verify/refute if humans and machines are statistically 
-    # independent. The H_0 is that they are not independent, so a 
-    # p-value <= 0.005 means they are independent.
+    
     for feat in table_all:
         annotators_feat={}
         if feat not in non_feats and feat in only_feat:
             for i, a in enumerate(annotators):
-                annotators_feat[a] = list(src_feat[a][feat])
+                annotators_feat[a]=list(src_feat[a][feat])
                 m = np.median(annotators_feat[a])
-                annotators_feat[a] = annotators_feat[a] + [m] * (docs_per_annotator
+                annotators_feat[a] = annotators_feat[a] + [m] * (docs_per_annotator 
                                                          - len(annotators_feat[a]))
-            anns_dict = annotators_feat
+
             annotators_feat = pd.DataFrame(annotators_feat)
-            asss = sorted(set(anns_dict.keys()))
-            table = {"Annotator/summarizer": asss}
-            repeats = []
-            for A in asss:
-                table[A] = ['--'] * len(asss)
-
-            for A in asss:
-                for B in asss:
-                    j = asss.index(B)
-                    if A == B:
-                        continue
-                    if (A, B) in repeats or (B, A) in repeats:
-                        continue
-                    else:
-                        mwt = '{0:.2E}'.format(
-                                    Decimal(ss.mannwhitneyu(anns_dict[A],
-                                                        anns_dict[B]).pvalue))
-                        if args.rot:
-                            table[A][j] = "\\rot{%s}" % mwt if not mwt.endswith('E+0') \
-                                            else "\\rot{%s}" % mwt.split('E')[0]
-                        else:
-                            table[A][j] = mwt if not mwt.endswith('E+0') \
-                                            else mwt.split('E')[0]
-                        repeats.append((A, B))
-
-            pd.DataFrame(table).to_csv(feat + "_MannWhitneyMtx{}.csv" \
-                            .format("_dev" if "_dev" in in_file else ""), index=False)
-            if args.rot:
-                csv = feat + "_MannWhitneyMtx{}.csv".format("_dev" if "_dev" in in_file else "", 'w')
-                with open(csv) as f:
-                    lines = f.readlines()
-                f.close()
-
-                lines[0] = ",".join(["\\rot{%s}" % n for n in lines[0].split(',')])
-                with open(csv, 'w') as fo:
-                    for l in lines:
-                        fo.write(l)
-
             ax=annotators_feat.plot(kind="box", vert=vertical, figsize=(17,15))
             ax.set_title(loc='center', label="Feature "+feat+
                         ": boxplots human/machine summarizers")
+        #ax.set_aspect(0.33)
             ax.set_aspect(aspect)
             ax.grid(color='r', linestyle='dashed', axis='y')
             ax.set_xticklabels(ax.get_xticklabels(),rotation=90)
