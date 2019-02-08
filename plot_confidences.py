@@ -33,9 +33,9 @@ args = parser.parse_args()
 linewidth=2
 aspect=args.aspect
 docs_per_annotator=args.ndocs
-vertical=True
-in_file="all_summ_tables_samp_%d_.csv" % docs_per_annotator
-directory="/home/iarroyof/Documentos/summ_feats/RESULTS/"
+vertical = True
+in_file = "all_summ_tables_samp_%d_.csv" % docs_per_annotator
+directory = "C:\\Users\\DELL\\data\\summ_feats_data\\RESULTS\\"  # "/home/iarroyof/Documentos/summ_feats/RESULTS/"
 
 non_feats=['Unnamed: 0', 'index', 'system', 'system.1']
 
@@ -163,8 +163,8 @@ for feat in table_all:
         ax.set_xticklabels(ax.get_xticklabels(),rotation=90)
         ax.set_xlabel("Frequency within 100-word summaries")
         for box in ax.lines: box.set_linewidth(linewidth)
-        print "Saving image: %s ..." % (directory+"figures/Feature_"+feat+
-                    "_all_box_machine-human_samp_"+str(docs_per_annotator)+".png")
+        print("Saving image: %s ..." % (directory+"figures/Feature_"+feat+
+                    "_all_box_machine-human_samp_"+str(docs_per_annotator)+".png"))
 
         plt.savefig(directory+"figures/Feature_"+feat+
                         "_all_box_machine-human_samp_"+str(docs_per_annotator)+".png")
