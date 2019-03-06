@@ -50,6 +50,8 @@ parser.add_argument("--sp_bx", help="""If you need feature spectrum pass 'sp', a
 parser.add_argument("--rot", help="""If you need to prepare the csv table for 1-page latex. 
                                      this rotates the headers and the cells.""",
                              default=False, action='store_true')
+parser.add_argument("--cols", help="Toggle to output columnized version of p-values "
+                                    "for headmapping.", default=False, action='store_true')
 #parser.add_argument("--outdir", help="Output directory.", default=None)
 args = parser.parse_args()
 
@@ -197,9 +199,26 @@ else:
                             table[A][j] = mwt if not mwt.endswith('E+0') \
                                             else mwt.split('E')[0]
                         repeats.append((A, B))
+            out_name = feat + "_MannWhitneyMtx{}.csv" \
+                            .format("_dev" if "_dev" in in_file else "")
+            pd.DataFrame(table).to_csv(out_name, index=False)
+            print("Saved Menn-Whitney matrix into {}".format(out_name))
 
-            pd.DataFrame(table).to_csv(feat + "_MannWhitneyMtx{}.csv" \
-                            .format("_dev" if "_dev" in in_file else ""), index=False)
+            if args.cols:
+
+                df = pd.read_csv(out_name, delimiter=',')
+                x = [c for c in df.columns]
+                y = df['Annotator/summarizer'].tolist()
+                outl = []
+                for i, a in enumerate(y):
+                    for j, b in enumerate(x[1:]):
+                        outl.append((a, b, df.iat[y.index(b), x.index(a)]))
+
+                dfo = pd.DataFrame(outl, columns=["system_a", "system_b", "p_value"])
+                heat_name = "{}_pvalues_heatmap.csv".format(feat)
+                dfo[dfo.p_value != '--'].to_csv(heat_name)
+                print("Saved Menn-Whitney heatmap into {}".format(heat_name))
+
             if args.rot:
                 csv = feat + "_MannWhitneyMtx{}.csv".format("_dev" if "_dev" in in_file else "", 'w')
                 with open(csv) as f:
