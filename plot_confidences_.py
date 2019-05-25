@@ -58,8 +58,9 @@ args = parser.parse_args()
 linewidth=2
 aspect=args.aspect
 docs_per_annotator=args.ndocs
+font_size = 20
 vertical=True
-in_file="all_summ_tables_samp_%d_dev_.csv" % docs_per_annotator
+in_file="all_summ_tables_samp_%d_.csv" % docs_per_annotator
 directory=""  #"/home/iarroyof/Documentos/summ_feats/RESULTS/"
 
 non_feats=['Unnamed: 0', 'index', 'system', 'system.1']
@@ -165,6 +166,7 @@ else:
     # in order to verify/refute if humans and machines are statistically 
     # independent. The H_0 is that they are not independent, so a 
     # p-value <= 0.005 means they are independent.
+    from collections import OrderedDict as odict
     for feat in table_all:
         annotators_feat={}
         if feat not in non_feats and feat in only_feat:
@@ -174,7 +176,7 @@ else:
                 annotators_feat[a] = annotators_feat[a] + [m] * (docs_per_annotator
                                                          - len(annotators_feat[a]))
             anns_dict = annotators_feat
-            annotators_feat = pd.DataFrame(annotators_feat)
+            annotators_feat = pd.DataFrame(odict(sorted(annotators_feat.items())))
             asss = sorted(set(anns_dict.keys()))
             table = {"Annotator/summarizer": asss}
             repeats = []
@@ -232,14 +234,18 @@ else:
 
             ax=annotators_feat.plot(kind="box", vert=vertical, figsize=(17,15))
             ax.set_title(loc='center', label="Feature "+feat+
-                        ": boxplots human/machine summarizers")
-            ax.set_aspect(aspect)
+                        ": boxplots human/machine summarizers", fontsize=font_size)
+            #ax.set_aspect(aspect)
             ax.grid(color='r', linestyle='dashed', axis='y')
-            ax.set_xticklabels(ax.get_xticklabels(),rotation=90)
-            ax.set_xlabel("Frequency within 100-word summaries")
+            ax.set_xticklabels(ax.get_xticklabels(),rotation=90) #, fontsize=font_size)
+            ax.set_xlabel("Frequency within 100-word summaries", fontsize=font_size)
+            #ax.set_yticklabels(ax.get_yticklabels(), fontsize=font_size)
+            ax.tick_params(axis='both', grid_color='grey', labelsize=font_size)
+            plt.tight_layout()
             for box in ax.lines: box.set_linewidth(linewidth)
-            print "Saving image: %s ..." % (directory+"figures/Feature_"+feat+
-                    "_all_box_machine-human_samp_"+str(docs_per_annotator)+".png")
+            print ("Saving image: %s ..." % (directory+"figures/Feature_"+feat+
+                    "_all_box_machine-human_samp_"+str(docs_per_annotator)+".png"))
+            plt.show()
 
             plt.savefig(directory+"figures/Feature_"+feat+
                         "_all_box_machine-human_samp_"+str(docs_per_annotator)+".png")
